@@ -1,0 +1,13 @@
+#include <stdio.h>
+#include <math.h>
+
+int main() {
+
+    int totalKeys = pow(25, 25);
+    printf("Total possible keys ignoring identical encryption results: 2^%.0lf\n", log2(totalKeys));
+
+    int uniqueKeys = totalKeys / (24 * 23 * 22 * 21 * 20); // approximation
+    printf("Effectively unique keys: 2^%.0lf\n", log2(uniqueKeys));
+
+    return 0;
+}
