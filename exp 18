@@ -1,0 +1,74 @@
+#include <stdio.h>
+#include <string.h>
+
+#define SUBKEY_SIZE 48
+#define NUM_ROUNDS 16
+
+// Simplified DES key tables (these should be correctly populated)
+int key_permutation_1[56] = { /* Key Permutation 1 table */ };
+int key_permutation_2[SUBKEY_SIZE] = { /* Key Permutation 2 table */ };
+int shift_schedule[NUM_ROUNDS] = { /* Shift schedule */ };
+
+// Function prototypes
+void permuteKey(int *input_key, int *output_key, int *permutation_table, int size);
+void shiftKey(int *key, int shifts);
+void generateSubkeys(unsigned char *key, int subkeys[NUM_ROUNDS][SUBKEY_SIZE]);
+
+void permuteKey(int *input_key, int *output_key, int *permutation_table, int size) {
+    for (int i = 0; i < size; i++) {
+        output_key[i] = input_key[permutation_table[i] - 1];
+    }
+}
+
+void shiftKey(int *key, int shifts) {
+    int temp[28];
+    memcpy(temp, key, shifts * sizeof(int));
+    memmove(key, key + shifts, (28 - shifts) * sizeof(int));
+    memcpy(key + 28 - shifts, temp, shifts * sizeof(int));
+}
+
+void generateSubkeys(unsigned char *key, int subkeys[NUM_ROUNDS][SUBKEY_SIZE]) {
+    int permuted_key[56];
+    int left[28], right[28];
+    int combined_key[56];
+
+    // Convert the key to binary and apply permutation 1
+    for (int i = 0; i < 56; i++) {
+        permuted_key[i] = (key[i / 8] >> (7 - (i % 8))) & 1;
+    }
+
+    // Split the key into left and right halves
+    memcpy(left, permuted_key, 28 * sizeof(int));
+    memcpy(right, permuted_key + 28, 28 * sizeof(int));
+
+    for (int round = 0; round < NUM_ROUNDS; round++) {
+        // Apply shifts
+        shiftKey(left, shift_schedule[round]);
+        shiftKey(right, shift_schedule[round]);
+
+        // Combine left and right halves
+        memcpy(combined_key, left, 28 * sizeof(int));
+        memcpy(combined_key + 28, right, 28 * sizeof(int));
+
+        // Apply permutation 2 to generate the subkey
+        permuteKey(combined_key, subkeys[round], key_permutation_2, SUBKEY_SIZE);
+    }
+}
+
+int main() {
+    unsigned char key[8] = { /* Example key */ };
+    int subkeys[NUM_ROUNDS][SUBKEY_SIZE];
+
+    generateSubkeys(key, subkeys);
+
+    printf("Generated subkeys:\n");
+    for (int i = 0; i < NUM_ROUNDS; i++) {
+        printf("Subkey %d: ", i + 1);
+        for (int j = 0; j < SUBKEY_SIZE; j++) {
+            printf("%d", subkeys[i][j]);
+        }
+        printf("\n");
+    }
+
+    return 0;
+}
