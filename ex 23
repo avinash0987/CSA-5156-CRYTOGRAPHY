@@ -1,0 +1,54 @@
+#include <stdio.h>
+#include <stdint.h>
+#include <string.h>
+void sdes_encrypt(uint8_t* input, uint8_t* key, uint8_t* output);
+void sdes_decrypt(uint8_t* input, uint8_t* key, uint8_t* output);
+void ctr_encrypt_decrypt(uint8_t* plaintext, uint8_t* key, uint8_t* ciphertext, size_t length);
+
+int main() {
+    uint8_t key[8] = {0x1F, 0xDD};  // Binary key: 01111 11101 (in hex)
+    uint8_t plaintext[6] = {0x01, 0x10, 0x20};  // Binary plaintext: 0000 0001 0000 0010 0000 0100
+    uint8_t expected_ciphertext[6] = {0x38, 0x4F, 0x32};  // Expected ciphertext
+    uint8_t ciphertext[6];
+    uint8_t decrypted_text[6];
+  
+    ctr_encrypt_decrypt(plaintext, key, ciphertext, sizeof(plaintext));
+    printf("Ciphertext: ");
+    for (size_t i = 0; i < sizeof(ciphertext); i++) {
+        printf("%02X ", ciphertext[i]);
+    }
+    printf("\n");
+  
+    ctr_encrypt_decrypt(ciphertext, key, decrypted_text, sizeof(ciphertext));
+    printf("Decrypted text: ");
+    for (size_t i = 0; i < sizeof(decrypted_text); i++) {
+        printf("%02X ", decrypted_text[i]);
+    }
+    printf("\n");
+
+    return 0;
+}
+
+void sdes_encrypt(uint8_t* input, uint8_t* key, uint8_t* output) {
+    
+    memcpy(output, input, 1);  // Stub implementation
+}
+
+void sdes_decrypt(uint8_t* input, uint8_t* key, uint8_t* output) {
+
+    memcpy(output, input, 1);  // Stub implementation
+}
+
+
+void ctr_encrypt_decrypt(uint8_t* plaintext, uint8_t* key, uint8_t* ciphertext, size_t length) {
+    uint8_t counter[1] = {0x00};  // Start with counter value 0000 0000
+    uint8_t keystream[1];
+    
+    for (size_t i = 0; i < length; i++) {
+        sdes_encrypt(counter, key, keystream);
+        ciphertext[i] = plaintext[i] ^ keystream[0];
+        
+        // Increment counter
+        counter[0]++;
+    }
+}
