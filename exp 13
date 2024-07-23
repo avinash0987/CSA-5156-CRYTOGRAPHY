@@ -1,0 +1,85 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+int modInverse(int a, int m) {
+    a = a % m;
+    for (int x = 1; x < m; x++) {
+        if ((a * x) % m == 1)
+            return x;
+    }
+    return -1;
+}
+
+int determinant(int mat[2][2]) {
+    return mat[0][0] * mat[1][1] - mat[0][1] * mat[1][0];
+}
+
+void adjoint(int mat[2][2], int adj[2][2]) {
+    adj[0][0] = mat[1][1];
+    adj[1][1] = mat[0][0];
+    adj[0][1] = -mat[0][1];
+    adj[1][0] = -mat[1][0];
+}
+
+int inverseMatrix(int mat[2][2], int inv[2][2], int mod) {
+    int det = determinant(mat);
+    int det_inv = modInverse(det, mod);
+    if (det_inv == -1)
+        return -1;
+
+    int adj[2][2];
+    adjoint(mat, adj);
+
+    for (int i = 0; i < 2; i++) {
+        for (int j = 0; j < 2; j++) {
+            inv[i][j] = (adj[i][j] * det_inv) % mod;
+            if (inv[i][j] < 0)
+                inv[i][j] += mod;
+        }
+    }
+    return 0;
+}
+
+
+void multiplyMatrices(int a[2][2], int b[2][1], int res[2][1], int mod) {
+    for (int i = 0; i < 2; i++) {
+        res[i][0] = 0;
+        for (int j = 0; j < 2; j++) {
+            res[i][0] = (res[i][0] + a[i][j] * b[j][0]) % mod;
+        }
+    }
+}
+
+void hillDecrypt(int ciphertext[2], int plaintext[2], int mod) {
+    int plaintextMatrix[2][1] = {{plaintext[0]}, {plaintext[1]}};
+    int ciphertextMatrix[2][1] = {{ciphertext[0]}, {ciphertext[1]}};
+
+    int invKey[2][2];
+    int keyMatrix[2][2] = {{ciphertextMatrix[0][0], ciphertextMatrix[1][0]},
+                           {ciphertextMatrix[0][1], ciphertextMatrix[1][1]}};
+
+    if (inverseMatrix(keyMatrix, invKey, mod) == -1) {
+        printf("Inverse doesn't exist\n");
+        return;
+    }
+
+    int result[2][1];
+    multiplyMatrices(invKey, plaintextMatrix, result, mod);
+
+    printf("Decrypted text: ");
+    for (int i = 0; i < 2; i++) {
+        printf("%c", result[i][0] + 'a');
+    }
+    printf("\n");
+}
+
+int main() {
+    int ciphertext[2] = {7, 8}; // Example ciphertext
+    int plaintext[2] = {0, 1}; // Example plaintext
+    int mod = 26;
+
+    hillDecrypt(ciphertext, plaintext, mod);
+
+    return 0;
+}
