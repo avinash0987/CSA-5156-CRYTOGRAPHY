@@ -1,0 +1,87 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <openssl/aes.h>
+#include <openssl/rand.h>
+
+
+void handleErrors() {
+    fprintf(stderr, "An error occurred.\n");
+    exit(EXIT_FAILURE);
+}
+
+void pad(unsigned char *input, int len, unsigned char *output, int blockSize) {
+    int padding_len = blockSize - (len % blockSize);
+    memcpy(output, input, len);
+    memset(output + len, padding_len, padding_len);
+}
+
+
+void encryptECB(unsigned char *plaintext, int plaintext_len, unsigned char *key, unsigned char *ciphertext) {
+    AES_KEY enc_key;
+    AES_set_encrypt_key(key, 128, &enc_key);
+    for (int i = 0; i < plaintext_len; i += AES_BLOCK_SIZE) {
+        AES_ecb_encrypt(plaintext + i, ciphertext + i, &enc_key, AES_ENCRYPT);
+    }
+}
+
+// Function to encrypt in CBC mode
+void encryptCBC(unsigned char *plaintext, int plaintext_len, unsigned char *key, unsigned char *iv, unsigned char *ciphertext) {
+    AES_KEY enc_key;
+    AES_set_encrypt_key(key, 128, &enc_key);
+    AES_cbc_encrypt(plaintext, ciphertext, plaintext_len, &enc_key, iv, AES_ENCRYPT);
+}
+
+void encryptCFB(unsigned char *plaintext, int plaintext_len, unsigned char *key, unsigned char *iv, unsigned char *ciphertext) {
+    AES_KEY enc_key;
+    AES_set_encrypt_key(key, 128, &enc_key);
+    int num = 0;
+    AES_cfb128_encrypt(plaintext, ciphertext, plaintext_len, &enc_key, iv, &num, AES_ENCRYPT);
+}
+
+int main() {
+    
+    unsigned char key[AES_BLOCK_SIZE];
+    unsigned char iv[AES_BLOCK_SIZE] = {0}; // Initialization vector
+
+    if (!RAND_bytes(key, sizeof(key))) {
+        handleErrors();
+    }
+
+    unsigned char plaintext[] = "This is a test message for cryptographic modes.";
+    int plaintext_len = strlen((char *)plaintext);
+    
+   
+    unsigned char padded_plaintext[128];
+    pad(plaintext, plaintext_len, padded_plaintext, AES_BLOCK_SIZE);
+    int padded_len = plaintext_len + (AES_BLOCK_SIZE - (plaintext_len % AES_BLOCK_SIZE));
+
+    unsigned char ciphertextECB[128];
+    unsigned char ciphertextCBC[128];
+    unsigned char ciphertextCFB[128];
+    encryptECB(padded_plaintext, padded_len, key, ciphertextECB);
+    encryptCBC(padded_plaintext, padded_len, key, iv, ciphertextCBC);
+    memset(iv, 0, AES_BLOCK_SIZE);
+    encryptCFB(plaintext, plaintext_len, key, iv, ciphertextCFB);
+
+ 
+    printf("ECB mode ciphertext: ");
+    for (int i = 0; i < padded_len; i++) {
+        printf("%02x ", ciphertextECB[i]);
+    }
+    printf("\n");
+
+    printf("CBC mode ciphertext: ");
+    for (int i = 0; i < padded_len; i++) {
+        printf("%02x ", ciphertextCBC[i]);
+    }
+    printf("\n");
+
+    printf("CFB mode ciphertext: ");
+    for (int i = 0; i < plaintext_len; i++) {
+        printf("%02x ", ciphertextCFB[i]);
+    }
+    printf("\n");
+
+    return 0;
+}
