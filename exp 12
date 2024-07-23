@@ -1,0 +1,30 @@
+#include <stdio.h>
+#include <string.h>
+
+void hillEncrypt(char* plaintext, int key[2][2]) {
+    int i, j, k;
+    int len = strlen(plaintext);
+    int tempMatrix[2];
+    int cipherText[2];
+
+    for (i = 0; i < len; i += 2) {
+        for (j = 0; j < 2; j++) {
+            tempMatrix[j] = plaintext[i + j] - 'a';
+        }
+        for (j = 0; j < 2; j++) {
+            cipherText[j] = 0;
+            for (k = 0; k < 2; k++) {
+                cipherText[j] += key[j][k] * tempMatrix[k];
+            }
+            cipherText[j] %= 26;
+            printf("%c", cipherText[j] + 'a');
+        }
+    }
+    printf("\n");
+}
+
+int main() {
+    int key[2][2] = { {9, 4}, {5, 7} };
+    char plaintext[] = "meetmeattheusualplaceattenratherthaneightoclock";
+
+    hillEncrypt(plaintext
