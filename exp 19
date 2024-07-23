@@ -1,0 +1,96 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <openssl/des.h>
+
+void handleErrors() {
+    fprintf(stderr, "An error occurred.\n");
+    exit(EXIT_FAILURE);
+}
+
+void pad(unsigned char *input, int len, unsigned char *output, int blockSize) {
+    int padding_len = blockSize - (len % blockSize);
+    memcpy(output, input, len);
+    output[len] = 0x80; // Add the 1 bit followed by 0 bits
+    memset(output + len + 1, 0, padding_len - 1);
+}
+
+
+void encrypt3DES_CBC(unsigned char *plaintext, int plaintext_len, unsigned char *key, unsigned char *iv, unsigned char *ciphertext) {
+    DES_key_schedule ks1, ks2, ks3;
+    DES_cblock key1, key2, key3;
+    DES_cblock iv_des;
+    
+
+    memcpy(key1, key, 8);
+    memcpy(key2, key + 8, 8);
+    memcpy(key3, key + 16, 8);
+    
+    DES_set_key_unchecked(&key1, &ks1);
+    DES_set_key_unchecked(&key2, &ks2);
+    DES_set_key_unchecked(&key3, &ks3);
+    
+    memcpy(iv_des, iv, 8);
+
+  
+    DES_ncbc_encrypt(plaintext, ciphertext, plaintext_len, &ks1, &iv_des, DES_ENCRYPT);
+    DES_ncbc_encrypt(ciphertext, ciphertext, plaintext_len, &ks2, &iv_des, DES_ENCRYPT);
+    DES_ncbc_encrypt(ciphertext, ciphertext, plaintext_len, &ks3, &iv_des, DES_ENCRYPT);
+}
+
+void decrypt3DES_CBC(unsigned char *ciphertext, int ciphertext_len, unsigned char *key, unsigned char *iv, unsigned char *plaintext) {
+    DES_key_schedule ks1, ks2, ks3;
+    DES_cblock key1, key2, key3;
+    DES_cblock iv_des;
+    memcpy(key1, key, 8);
+    memcpy(key2, key + 8, 8);
+    memcpy(key3, key + 16, 8);
+    
+    DES_set_key_unchecked(&key1, &ks1);
+    DES_set_key_unchecked(&key2, &ks2);
+    DES_set_key_unchecked(&key3, &ks3);
+    
+    memcpy(iv_des, iv, 8);
+
+    
+    DES_ncbc_encrypt(ciphertext, plaintext, ciphertext_len, &ks3, &iv_des, DES_DECRYPT);
+    DES_ncbc_encrypt(plaintext, ciphertext, ciphertext_len, &ks2, &iv_des, DES_ENCRYPT);
+    DES_ncbc_encrypt(ciphertext, plaintext, ciphertext_len, &ks1, &iv_des, DES_DECRYPT);
+}
+
+int main() {
+    unsigned char key[24] = {0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0xFE, 0xDC, 0xBA, 0x98, 0x76, 0x54, 0x32, 0x10, 0x0F, 0x1E, 0x2D, 0x3C, 0x4B, 0x5A, 0x69}; // 24 bytes key for 3DES
+    unsigned char iv[8] = {0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17}; // Initialization Vector
+    
+    unsigned char plaintext[] = "This is a test message.";
+    int plaintext_len = strlen((char *)plaintext);
+    
+    int blockSize = 8;
+    int padded_len = plaintext_len + (blockSize - (plaintext_len % blockSize));
+    unsigned char padded_plaintext[128];
+    unsigned char ciphertext[128];
+    unsigned char decrypted_text[128];
+    
+    pad(plaintext, plaintext_len, padded_plaintext, blockSize);
+    
+    encrypt3DES_CBC(padded_plaintext, padded_len, key, iv, ciphertext);
+    
+  
+    decrypt3DES_CBC(ciphertext, padded_len, key, iv, decrypted_text);
+    
+  
+    printf("Ciphertext: ");
+    for (int i = 0; i < padded_len; i++) {
+        printf("%02x ", ciphertext[i]);
+    }
+    printf("\n");
+    
+
+    printf("Decrypted text: ");
+    for (int i = 0; i < padded_len; i++) {
+        printf("%c", decrypted_text[i]);
+    }
+    printf("\n");
+    
+    return 0;
+}
