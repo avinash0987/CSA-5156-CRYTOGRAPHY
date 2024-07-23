@@ -1,0 +1,105 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define BLOCK_SIZE 64
+#define SUBKEY_SIZE 48
+#define NUM_ROUNDS 16
+
+int initial_permutation[BLOCK_SIZE] = { /* Initial Permutation table */ };
+int final_permutation[BLOCK_SIZE] = { /* Final Permutation table */ };
+int expansion_table[48] = { /* Expansion table */ };
+int s_boxes[8][4][16] = { /* S-boxes */ };
+int permutation_function[32] = { /* Permutation table */ };
+int key_permutation_1[56] = { /* Key Permutation 1 table */ };
+int key_permutation_2[SUBKEY_SIZE] = { /* Key Permutation 2 table */ };
+int shift_schedule[NUM_ROUNDS] = { /* Shift schedule */ };
+
+// Function prototypes
+void initialPermutation(int *block);
+void finalPermutation(int *block);
+void expandBlock(int *half_block, int *expanded_block);
+void substitute(int *expanded_block, int *substituted_block);
+void permute(int *block, int *permuted_block);
+void generateSubkeys(unsigned char *key, int subkeys[NUM_ROUNDS][SUBKEY_SIZE], int decrypt);
+void feistelFunction(int *half_block, int *subkey, int *output);
+
+void desDecrypt(unsigned char *ciphertext, unsigned char *key, unsigned char *plaintext) {
+    int block[BLOCK_SIZE];
+    int left[32], right[32];
+    int temp[32];
+    int expanded_right[SUBKEY_SIZE];
+    int subkeys[NUM_ROUNDS][SUBKEY_SIZE];
+    
+   
+    for (int i = 0; i < BLOCK_SIZE; i++) {
+        block[i] = (ciphertext[i / 8] >> (7 - (i % 8))) & 1;
+    }
+
+   
+    initialPermutation(block);
+
+  
+    memcpy(left, block, 32 * sizeof(int));
+    memcpy(right, block + 32, 32 * sizeof(int));
+
+    // Generate subkeys for decryption
+    generateSubkeys(key, subkeys, 1);
+
+    // 16 rounds of DES
+    for (int i = 0; i < NUM_ROUNDS; i++) {
+        memcpy(temp, right, 32 * sizeof(int));
+        expandBlock(right, expanded_right);
+        feistelFunction(expanded_right, subkeys[i], temp);
+        for (int j = 0; j < 32; j++) {
+            temp[j] = left[j] ^ temp[j];
+        }
+        memcpy(left, right, 32 * sizeof(int));
+        memcpy(right, temp, 32 * sizeof(int));
+    }
+
+    // Swap left and right
+    memcpy(block, right, 32 * sizeof(int));
+    memcpy(block + 32, left, 32 * sizeof(int));
+
+    // Final permutation
+    finalPermutation(block);
+
+    // Convert block to plaintext (simplified for demonstration)
+    for (int i = 0; i < BLOCK_SIZE; i++) {
+        plaintext[i / 8] |= block[i] << (7 - (i % 8));
+    }
+}
+
+// Simplified function implementations for demonstration
+void initialPermutation(int *block) { /* Apply initial permutation */ }
+void finalPermutation(int *block) { /* Apply final permutation */ }
+void expandBlock(int *half_block, int *expanded_block) { /* Expand half block */ }
+void substitute(int *expanded_block, int *substituted_block) { /* Substitute using S-boxes */ }
+void permute(int *block, int *permuted_block) { /* Apply permutation function */ }
+void generateSubkeys(unsigned char *key, int subkeys[NUM_ROUNDS][SUBKEY_SIZE], int decrypt) {
+    // Simplified subkey generation
+    for (int i = 0; i < NUM_ROUNDS; i++) {
+        // Generate subkey for round i
+        // In decryption mode, reverse the order of the keys
+        int round = decrypt ? NUM_ROUNDS - 1 - i : i;
+        // Apply permutations and shifts to generate subkeys
+    }
+}
+void feistelFunction(int *half_block, int *subkey, int *output) { /* Feistel function */ }
+
+int main() {
+    unsigned char ciphertext[8] = { /* Example ciphertext */ };
+    unsigned char key[8] = { /* Example key */ };
+    unsigned char plaintext[8] = {0};
+
+    desDecrypt(ciphertext, key, plaintext);
+
+    printf("Decrypted text: ");
+    for (int i = 0; i < 8; i++) {
+        printf("%c", plaintext[i]);
+    }
+    printf("\n");
+
+    return 0;
+}
